@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 
 type Screen = 'auth' | 'menu' | 'game' | 'stats' | 'settings' | 'results';
 
@@ -385,42 +386,20 @@ export default function Index() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Icon name="DollarSign" size={16} className="text-green-500" />
-                  <span className="text-xs text-slate-400">Экономика</span>
-                </div>
-                <Progress value={gameState.economy} className="h-2 bg-slate-700" />
-                <div className="text-sm font-bold text-white">{Math.round(gameState.economy)}%</div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Icon name="Shield" size={16} className="text-blue-500" />
-                  <span className="text-xs text-slate-400">Безопасность</span>
-                </div>
-                <Progress value={gameState.security} className="h-2 bg-slate-700" />
-                <div className="text-sm font-bold text-white">{Math.round(gameState.security)}%</div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Icon name="Handshake" size={16} className="text-purple-500" />
-                  <span className="text-xs text-slate-400">Дипломатия</span>
-                </div>
-                <Progress value={gameState.diplomacy} className="h-2 bg-slate-700" />
-                <div className="text-sm font-bold text-white">{Math.round(gameState.diplomacy)}%</div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Icon name="Heart" size={16} className="text-pink-500" />
-                  <span className="text-xs text-slate-400">Социальное</span>
-                </div>
-                <Progress value={gameState.social} className="h-2 bg-slate-700" />
-                <div className="text-sm font-bold text-white">{Math.round(gameState.social)}%</div>
-              </div>
+            <div className="bg-slate-900/50 rounded-lg p-3">
+              <ResponsiveContainer width="100%" height={200}>
+                <RadarChart data={[
+                  { subject: 'Экономика', value: gameState.economy, fullMark: 100 },
+                  { subject: 'Безопасность', value: gameState.security, fullMark: 100 },
+                  { subject: 'Дипломатия', value: gameState.diplomacy, fullMark: 100 },
+                  { subject: 'Социальное', value: gameState.social, fullMark: 100 },
+                ]}>
+                  <PolarGrid stroke="#475569" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 10 }} />
+                  <Radar name="Показатели" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                </RadarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
@@ -611,41 +590,38 @@ export default function Index() {
             </h1>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2 p-4 bg-slate-700/50 rounded-lg">
+          <div className="bg-slate-900/50 rounded-lg p-4">
+            <ResponsiveContainer width="100%" height={280}>
+              <RadarChart data={[
+                { subject: 'Экономика', value: gameState.economy, fullMark: 100 },
+                { subject: 'Безопасность', value: gameState.security, fullMark: 100 },
+                { subject: 'Дипломатия', value: gameState.diplomacy, fullMark: 100 },
+                { subject: 'Социальное', value: gameState.social, fullMark: 100 },
+              ]}>
+                <PolarGrid stroke="#475569" strokeWidth={1.5} />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: '#cbd5e1', fontSize: 13, fontWeight: 600 }} />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                <Radar name="Показатели" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.7} strokeWidth={2} />
+              </RadarChart>
+            </ResponsiveContainer>
+            
+            <div className="grid grid-cols-2 gap-3 mt-4">
               <div className="flex items-center gap-2">
-                <Icon name="DollarSign" size={20} className="text-green-500" />
-                <span className="text-sm text-slate-400">Экономика</span>
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="text-sm text-slate-300">Экономика: {Math.round(gameState.economy)}%</span>
               </div>
-              <div className="text-3xl font-bold text-white">{Math.round(gameState.economy)}%</div>
-              <Progress value={gameState.economy} className="h-2" />
-            </div>
-
-            <div className="space-y-2 p-4 bg-slate-700/50 rounded-lg">
               <div className="flex items-center gap-2">
-                <Icon name="Shield" size={20} className="text-blue-500" />
-                <span className="text-sm text-slate-400">Безопасность</span>
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <span className="text-sm text-slate-300">Безопасность: {Math.round(gameState.security)}%</span>
               </div>
-              <div className="text-3xl font-bold text-white">{Math.round(gameState.security)}%</div>
-              <Progress value={gameState.security} className="h-2" />
-            </div>
-
-            <div className="space-y-2 p-4 bg-slate-700/50 rounded-lg">
               <div className="flex items-center gap-2">
-                <Icon name="Handshake" size={20} className="text-purple-500" />
-                <span className="text-sm text-slate-400">Дипломатия</span>
+                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                <span className="text-sm text-slate-300">Дипломатия: {Math.round(gameState.diplomacy)}%</span>
               </div>
-              <div className="text-3xl font-bold text-white">{Math.round(gameState.diplomacy)}%</div>
-              <Progress value={gameState.diplomacy} className="h-2" />
-            </div>
-
-            <div className="space-y-2 p-4 bg-slate-700/50 rounded-lg">
               <div className="flex items-center gap-2">
-                <Icon name="Heart" size={20} className="text-pink-500" />
-                <span className="text-sm text-slate-400">Социальное</span>
+                <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+                <span className="text-sm text-slate-300">Социальное: {Math.round(gameState.social)}%</span>
               </div>
-              <div className="text-3xl font-bold text-white">{Math.round(gameState.social)}%</div>
-              <Progress value={gameState.social} className="h-2" />
             </div>
           </div>
 
