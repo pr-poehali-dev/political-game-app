@@ -1,14 +1,326 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import Icon from '@/components/ui/icon';
 
-const Index = () => {
+interface GameState {
+  economy: number;
+  security: number;
+  diplomacy: number;
+  social: number;
+}
+
+interface Crisis {
+  title: string;
+  description: string;
+  icon: string;
+}
+
+interface Action {
+  id: string;
+  name: string;
+  icon: string;
+  effects: Partial<GameState>;
+  color: string;
+}
+
+const initialState: GameState = {
+  economy: 60,
+  security: 80,
+  diplomacy: 20,
+  social: 50,
+};
+
+const crises: Crisis[] = [
+  {
+    title: 'Экономический спад',
+    description: 'Экономика -25% | Социальная стабильность -10%',
+    icon: 'TrendingDown',
+  },
+  {
+    title: 'Угроза безопасности',
+    description: 'Безопасность -30% | Дипломатия +5%',
+    icon: 'ShieldAlert',
+  },
+  {
+    title: 'Международный конфликт',
+    description: 'Дипломатия -40% | Экономика -15%',
+    icon: 'Globe',
+  },
+  {
+    title: 'Социальные протесты',
+    description: 'Социальное -35% | Безопасность -10%',
+    icon: 'Users',
+  },
+  {
+    title: 'Энергетический кризис',
+    description: 'Экономика -20% | Социальное -15%',
+    icon: 'Zap',
+  },
+];
+
+const actions: Action[] = [
+  {
+    id: 'economy',
+    name: 'Экономика',
+    icon: 'DollarSign',
+    effects: { economy: 15, social: -5 },
+    color: 'bg-success',
+  },
+  {
+    id: 'security',
+    name: 'Безопасность',
+    icon: 'Shield',
+    effects: { security: 20, economy: -5 },
+    color: 'bg-primary',
+  },
+  {
+    id: 'diplomacy',
+    name: 'Дипломатия',
+    icon: 'Handshake',
+    effects: { diplomacy: 18, security: -5 },
+    color: 'bg-accent',
+  },
+  {
+    id: 'social',
+    name: 'Социальное',
+    icon: 'Heart',
+    effects: { social: 20, economy: -5 },
+    color: 'bg-destructive',
+  },
+];
+
+export default function Index() {
+  const [gameState, setGameState] = useState<GameState>(initialState);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [currentCrisis, setCurrentCrisis] = useState<Crisis>(crises[0]);
+  const [gameOver, setGameOver] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    if (!isPlaying || gameOver) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          handleRoundEnd();
+          return 60;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, gameOver]);
+
+  const handleRoundEnd = () => {
+    if (currentRound >= 5) {
+      setGameOver(true);
+      setIsPlaying(false);
+      return;
+    }
+
+    setCurrentRound((prev) => prev + 1);
+    setCurrentCrisis(crises[Math.floor(Math.random() * crises.length)]);
+    
+    setGameState((prev) => ({
+      economy: Math.max(0, Math.min(100, prev.economy - 10)),
+      security: Math.max(0, Math.min(100, prev.security - 5)),
+      diplomacy: Math.max(0, Math.min(100, prev.diplomacy - 5)),
+      social: Math.max(0, Math.min(100, prev.social - 10)),
+    }));
+  };
+
+  const handleAction = (action: Action) => {
+    if (!isPlaying || gameOver) return;
+
+    setGameState((prev) => {
+      const newState = { ...prev };
+      Object.entries(action.effects).forEach(([key, value]) => {
+        newState[key as keyof GameState] = Math.max(
+          0,
+          Math.min(100, newState[key as keyof GameState] + value)
+        );
+      });
+      return newState;
+    });
+  };
+
+  const startGame = () => {
+    setIsPlaying(true);
+    setGameOver(false);
+    setCurrentRound(1);
+    setTimeLeft(60);
+    setGameState(initialState);
+    setCurrentCrisis(crises[0]);
+  };
+
+  const getResultMessage = () => {
+    const total = Object.values(gameState).reduce((sum, val) => sum + val, 0);
+    const average = total / 4;
+    
+    if (average >= 70) return { title: '🏆 ПОБЕДА МИНИСТРОВ', color: 'text-success' };
+    if (average >= 50) return { title: '⚖️ СТАБИЛЬНОСТЬ', color: 'text-accent' };
+    if (average >= 30) return { title: '⚠️ КРИЗИС', color: 'text-orange-500' };
+    return { title: '💥 КРАХ ГОСУДАРСТВА', color: 'text-destructive' };
+  };
+
+  if (!isPlaying && !gameOver) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center space-y-6">
+          <div className="flex items-center justify-center gap-3">
+            <Icon name="Building2" size={48} className="text-primary" />
+          </div>
+          <h1 className="text-4xl font-bold text-foreground">Statemate</h1>
+          <p className="text-muted-foreground">
+            Управляйте государством. Балансируйте показатели. Переживите 5 раундов кризисов.
+          </p>
+          <Button onClick={startGame} size="lg" className="w-full text-lg">
+            <Icon name="Play" size={20} className="mr-2" />
+            Начать игру
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (gameOver) {
+    const result = getResultMessage();
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl p-8 space-y-6">
+          <h1 className={`text-4xl font-bold text-center ${result.color}`}>
+            {result.title}
+          </h1>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Icon name="DollarSign" size={20} className="text-success" />
+                <span className="text-sm text-muted-foreground">Экономика</span>
+              </div>
+              <div className="text-3xl font-bold">{Math.round(gameState.economy)}%</div>
+              <Progress value={gameState.economy} className="h-2" />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Icon name="Shield" size={20} className="text-primary" />
+                <span className="text-sm text-muted-foreground">Безопасность</span>
+              </div>
+              <div className="text-3xl font-bold">{Math.round(gameState.security)}%</div>
+              <Progress value={gameState.security} className="h-2" />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Icon name="Handshake" size={20} className="text-accent" />
+                <span className="text-sm text-muted-foreground">Дипломатия</span>
+              </div>
+              <div className="text-3xl font-bold">{Math.round(gameState.diplomacy)}%</div>
+              <Progress value={gameState.diplomacy} className="h-2" />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Icon name="Heart" size={20} className="text-destructive" />
+                <span className="text-sm text-muted-foreground">Социальное</span>
+              </div>
+              <div className="text-3xl font-bold">{Math.round(gameState.social)}%</div>
+              <Progress value={gameState.social} className="h-2" />
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <Button onClick={startGame} size="lg" className="flex-1">
+              <Icon name="RotateCcw" size={20} className="mr-2" />
+              Играть снова
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 color-black text-black">Добро пожаловать!</h1>
-        <p className="text-xl text-gray-600">тут будет отображаться ваш проект</p>
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-2xl mx-auto space-y-4">
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-center flex-1">
+              <div className="text-4xl font-bold text-foreground">{String(Math.floor(timeLeft / 60)).padStart(2, '0')}:{String(timeLeft % 60).padStart(2, '0')}</div>
+              <div className="text-sm text-muted-foreground">Раунд {currentRound}/5</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Icon name="DollarSign" size={16} className="text-success" />
+                <span className="text-xs text-muted-foreground">Экономика</span>
+                <span className="text-sm font-bold ml-auto">{Math.round(gameState.economy)}%</span>
+              </div>
+              <Progress value={gameState.economy} className="h-2" />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Icon name="Shield" size={16} className="text-primary" />
+                <span className="text-xs text-muted-foreground">Безопасность</span>
+                <span className="text-sm font-bold ml-auto">{Math.round(gameState.security)}%</span>
+              </div>
+              <Progress value={gameState.security} className="h-2" />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Icon name="Handshake" size={16} className="text-accent" />
+                <span className="text-xs text-muted-foreground">Дипломатия</span>
+                <span className="text-sm font-bold ml-auto">{Math.round(gameState.diplomacy)}%</span>
+              </div>
+              <Progress value={gameState.diplomacy} className="h-2" />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Icon name="Heart" size={16} className="text-destructive" />
+                <span className="text-xs text-muted-foreground">Социальное</span>
+                <span className="text-sm font-bold ml-auto">{Math.round(gameState.social)}%</span>
+              </div>
+              <Progress value={gameState.social} className="h-2" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-start gap-3">
+            <div className="p-3 rounded-lg bg-destructive/10">
+              <Icon name={currentCrisis.icon} size={24} className="text-destructive" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold mb-1">КРИЗИС: {currentCrisis.title}</h2>
+              <p className="text-sm text-muted-foreground">{currentCrisis.description}</p>
+            </div>
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-2 gap-3">
+          {actions.map((action) => (
+            <Button
+              key={action.id}
+              onClick={() => handleAction(action)}
+              className={`h-24 flex-col gap-2 ${action.color} hover:opacity-90`}
+              size="lg"
+            >
+              <Icon name={action.icon} size={32} />
+              <span className="text-base font-semibold">{action.name}</span>
+            </Button>
+          ))}
+        </div>
       </div>
     </div>
   );
-};
-
-export default Index;
+}
