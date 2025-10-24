@@ -101,22 +101,32 @@ const actions: Action[] = [
   },
 ];
 
-const playerNames = ['Иван', 'Мария', 'Дмитрий', 'Анна', 'Сергей'];
-const avatarColors = ['bg-blue-500', 'bg-pink-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500'];
+const playerNames = ['Иван', 'Мария', 'Дмитрий', 'Анна'];
+const avatarColors = ['bg-blue-500', 'bg-pink-500', 'bg-green-500', 'bg-purple-500'];
 
 export default function Index() {
+  const initializePlayers = () => {
+    const oppositionIndex = Math.floor(Math.random() * playerNames.length);
+    return playerNames.map((name, index) => ({
+      id: index,
+      name,
+      avatar: avatarColors[index],
+      vote: null,
+      isOpposition: index === oppositionIndex,
+    }));
+  };
+
   const [gameState, setGameState] = useState<GameState>(initialState);
   const [currentRound, setCurrentRound] = useState(1);
   const [timeLeft, setTimeLeft] = useState(60);
   const [currentCrisis, setCurrentCrisis] = useState<Crisis>(crises[0]);
   const [gameOver, setGameOver] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<Player[]>(initializePlayers());
   const [hasVoted, setHasVoted] = useState(false);
   const [isDiversionMode, setIsDiversionMode] = useState(false);
 
   useEffect(() => {
-    if (!isPlaying || gameOver) return;
+    if (gameOver) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -134,7 +144,6 @@ export default function Index() {
   const handleRoundEnd = () => {
     if (currentRound >= 5) {
       setGameOver(true);
-      setIsPlaying(false);
       return;
     }
 
@@ -155,7 +164,7 @@ export default function Index() {
   };
 
   const handleAction = (action: Action) => {
-    if (!isPlaying || gameOver || hasVoted) return;
+    if (gameOver || hasVoted) return;
 
     const effectMultiplier = isDiversionMode ? -1 : 1;
     
@@ -185,25 +194,15 @@ export default function Index() {
   };
 
   const startGame = () => {
-    const oppositionIndex = Math.floor(Math.random() * playerNames.length);
-    const newPlayers: Player[] = playerNames.map((name, index) => ({
-      id: index,
-      name,
-      avatar: avatarColors[index],
-      vote: null,
-      isOpposition: index === oppositionIndex,
-    }));
-    
+    const newPlayers = initializePlayers();
     setPlayers(newPlayers);
-    setIsDiversionMode(oppositionIndex === 0);
-    setIsPlaying(true);
+    setIsDiversionMode(false);
     setGameOver(false);
     setCurrentRound(1);
     setTimeLeft(60);
     setGameState(initialState);
     setCurrentCrisis(crises[0]);
     setHasVoted(false);
-    setIsDiversionMode(false);
   };
 
   const getResultMessage = () => {
@@ -215,26 +214,6 @@ export default function Index() {
     if (average >= 30) return { title: '⚠️ КРИЗИС', color: 'text-orange-500' };
     return { title: '💥 КРАХ ГОСУДАРСТВА', color: 'text-destructive' };
   };
-
-  if (!isPlaying && !gameOver) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center space-y-6">
-          <div className="flex items-center justify-center gap-3">
-            <Icon name="Building2" size={48} className="text-primary" />
-          </div>
-          <h1 className="text-4xl font-bold text-foreground">Statemate</h1>
-          <p className="text-muted-foreground">
-            Управляйте государством. Балансируйте показатели. Переживите 5 раундов кризисов.
-          </p>
-          <Button onClick={startGame} size="lg" className="w-full text-lg">
-            <Icon name="Play" size={20} className="mr-2" />
-            Начать игру
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
   if (gameOver) {
     const result = getResultMessage();
@@ -320,14 +299,14 @@ export default function Index() {
           </div>
 
           <div className="mb-4">
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {players.map((player) => {
                 const voteAction = actions.find((a) => a.id === player.vote);
                 const isCurrentPlayer = player.id === 0;
                 return (
                   <div key={player.id} className="flex flex-col items-center gap-1">
                     <div className="relative">
-                      <Avatar className={`h-12 w-12 border-2 ${isCurrentPlayer ? 'border-primary ring-2 ring-primary/30' : player.isOpposition ? 'border-destructive' : 'border-success'}`}>
+                      <Avatar className={`h-12 w-12 border-2 ${isCurrentPlayer ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}>
                         <AvatarFallback className={player.avatar}>
                           {player.name[0]}
                         </AvatarFallback>
@@ -337,14 +316,8 @@ export default function Index() {
                           <Icon name={voteAction.icon} size={12} className="text-white" />
                         </div>
                       )}
-                      <div className={`absolute -top-1 -left-1 rounded-full p-0.5 ${player.isOpposition ? 'bg-destructive' : 'bg-success'}`}>
-                        <Icon name={player.isOpposition ? 'Ban' : 'Building2'} size={10} className="text-white" />
-                      </div>
                     </div>
                     <span className="text-xs text-muted-foreground">{player.name}</span>
-                    <span className={`text-[10px] font-medium ${player.isOpposition ? 'text-destructive' : 'text-success'}`}>
-                      {player.isOpposition ? 'Оппозиционер' : 'Министр'}
-                    </span>
                   </div>
                 );
               })}
