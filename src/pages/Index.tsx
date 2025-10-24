@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Icon from '@/components/ui/icon';
 
 interface GameState {
@@ -23,6 +25,14 @@ interface Action {
   icon: string;
   effects: Partial<GameState>;
   color: string;
+}
+
+interface Player {
+  id: number;
+  name: string;
+  avatar: string;
+  vote: string | null;
+  isOpposition: boolean;
 }
 
 const initialState: GameState = {
@@ -91,6 +101,9 @@ const actions: Action[] = [
   },
 ];
 
+const playerNames = ['Иван', 'Мария', 'Дмитрий', 'Анна'];
+const avatarColors = ['bg-blue-500', 'bg-pink-500', 'bg-green-500', 'bg-purple-500'];
+
 export default function Index() {
   const [gameState, setGameState] = useState<GameState>(initialState);
   const [currentRound, setCurrentRound] = useState(1);
@@ -98,6 +111,9 @@ export default function Index() {
   const [currentCrisis, setCurrentCrisis] = useState<Crisis>(crises[0]);
   const [gameOver, setGameOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [isDiversionMode, setIsDiversionMode] = useState(false);
 
   useEffect(() => {
     if (!isPlaying || gameOver) return;
@@ -124,6 +140,11 @@ export default function Index() {
 
     setCurrentRound((prev) => prev + 1);
     setCurrentCrisis(crises[Math.floor(Math.random() * crises.length)]);
+    setHasVoted(false);
+    
+    setPlayers((prevPlayers) =>
+      prevPlayers.map((player) => ({ ...player, vote: null }))
+    );
     
     setGameState((prev) => ({
       economy: Math.max(0, Math.min(100, prev.economy - 10)),
@@ -134,27 +155,53 @@ export default function Index() {
   };
 
   const handleAction = (action: Action) => {
-    if (!isPlaying || gameOver) return;
+    if (!isPlaying || gameOver || hasVoted) return;
 
+    const effectMultiplier = isDiversionMode ? -1 : 1;
+    
     setGameState((prev) => {
       const newState = { ...prev };
       Object.entries(action.effects).forEach(([key, value]) => {
         newState[key as keyof GameState] = Math.max(
           0,
-          Math.min(100, newState[key as keyof GameState] + value)
+          Math.min(100, newState[key as keyof GameState] + value * effectMultiplier)
         );
       });
       return newState;
     });
+
+    setPlayers((prevPlayers) => {
+      const updatedPlayers = prevPlayers.map((player, index) => {
+        if (index === 0) {
+          return { ...player, vote: action.id };
+        }
+        const randomAction = actions[Math.floor(Math.random() * actions.length)];
+        return { ...player, vote: randomAction.id };
+      });
+      return updatedPlayers;
+    });
+
+    setHasVoted(true);
   };
 
   const startGame = () => {
+    const newPlayers: Player[] = playerNames.map((name, index) => ({
+      id: index,
+      name,
+      avatar: avatarColors[index],
+      vote: null,
+      isOpposition: false,
+    }));
+    
+    setPlayers(newPlayers);
     setIsPlaying(true);
     setGameOver(false);
     setCurrentRound(1);
     setTimeLeft(60);
     setGameState(initialState);
     setCurrentCrisis(crises[0]);
+    setHasVoted(false);
+    setIsDiversionMode(false);
   };
 
   const getResultMessage = () => {
@@ -256,6 +303,45 @@ export default function Index() {
             </div>
           </div>
 
+          <div className="flex items-center justify-between mb-4 p-3 bg-muted/30 rounded-lg">
+            <span className="text-sm font-medium">Режим диверсии</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {isDiversionMode ? 'Вредить государству' : 'Помогать государству'}
+              </span>
+              <Switch
+                checked={isDiversionMode}
+                onCheckedChange={setIsDiversionMode}
+                disabled={hasVoted}
+              />
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <div className="grid grid-cols-4 gap-2">
+              {players.map((player) => {
+                const voteAction = actions.find((a) => a.id === player.vote);
+                return (
+                  <div key={player.id} className="flex flex-col items-center gap-1">
+                    <div className="relative">
+                      <Avatar className="h-12 w-12 border-2 border-border">
+                        <AvatarFallback className={player.avatar}>
+                          {player.name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      {player.vote && voteAction && (
+                        <div className={`absolute -bottom-1 -right-1 ${voteAction.color} rounded-full p-1`}>
+                          <Icon name={voteAction.icon} size={12} className="text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{player.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -312,8 +398,9 @@ export default function Index() {
             <Button
               key={action.id}
               onClick={() => handleAction(action)}
-              className={`h-24 flex-col gap-2 ${action.color} hover:opacity-90`}
+              className={`h-24 flex-col gap-2 ${action.color} hover:opacity-90 ${hasVoted ? 'opacity-50 cursor-not-allowed' : ''}`}
               size="lg"
+              disabled={hasVoted}
             >
               <Icon name={action.icon} size={32} />
               <span className="text-base font-semibold">{action.name}</span>
