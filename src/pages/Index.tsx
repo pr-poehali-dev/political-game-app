@@ -101,8 +101,8 @@ const actions: Action[] = [
   },
 ];
 
-const playerNames = ['Иван', 'Мария', 'Дмитрий', 'Анна'];
-const avatarColors = ['bg-blue-500', 'bg-pink-500', 'bg-green-500', 'bg-purple-500'];
+const playerNames = ['Иван', 'Мария', 'Дмитрий', 'Анна', 'Сергей'];
+const avatarColors = ['bg-blue-500', 'bg-pink-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500'];
 
 export default function Index() {
   const [gameState, setGameState] = useState<GameState>(initialState);
@@ -185,15 +185,17 @@ export default function Index() {
   };
 
   const startGame = () => {
+    const oppositionIndex = Math.floor(Math.random() * playerNames.length);
     const newPlayers: Player[] = playerNames.map((name, index) => ({
       id: index,
       name,
       avatar: avatarColors[index],
       vote: null,
-      isOpposition: false,
+      isOpposition: index === oppositionIndex,
     }));
     
     setPlayers(newPlayers);
+    setIsDiversionMode(oppositionIndex === 0);
     setIsPlaying(true);
     setGameOver(false);
     setCurrentRound(1);
@@ -318,13 +320,14 @@ export default function Index() {
           </div>
 
           <div className="mb-4">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {players.map((player) => {
                 const voteAction = actions.find((a) => a.id === player.vote);
+                const isCurrentPlayer = player.id === 0;
                 return (
                   <div key={player.id} className="flex flex-col items-center gap-1">
                     <div className="relative">
-                      <Avatar className="h-12 w-12 border-2 border-border">
+                      <Avatar className={`h-12 w-12 border-2 ${isCurrentPlayer ? 'border-primary ring-2 ring-primary/30' : player.isOpposition ? 'border-destructive' : 'border-success'}`}>
                         <AvatarFallback className={player.avatar}>
                           {player.name[0]}
                         </AvatarFallback>
@@ -334,8 +337,14 @@ export default function Index() {
                           <Icon name={voteAction.icon} size={12} className="text-white" />
                         </div>
                       )}
+                      <div className={`absolute -top-1 -left-1 rounded-full p-0.5 ${player.isOpposition ? 'bg-destructive' : 'bg-success'}`}>
+                        <Icon name={player.isOpposition ? 'Ban' : 'Building2'} size={10} className="text-white" />
+                      </div>
                     </div>
                     <span className="text-xs text-muted-foreground">{player.name}</span>
+                    <span className={`text-[10px] font-medium ${player.isOpposition ? 'text-destructive' : 'text-success'}`}>
+                      {player.isOpposition ? 'Оппозиционер' : 'Министр'}
+                    </span>
                   </div>
                 );
               })}
