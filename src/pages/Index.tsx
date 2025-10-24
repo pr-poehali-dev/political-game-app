@@ -139,7 +139,7 @@ export default function Index() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPlaying, gameOver]);
+  }, [gameOver]);
 
   const handleRoundEnd = () => {
     if (currentRound >= 5) {
